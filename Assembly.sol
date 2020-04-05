@@ -13,12 +13,18 @@ contract Assembly is owned {
         api = _api;
     }
 
-    function register(string memory reg) public {
+    function register(string memory secret, uint8 v, bytes32 r, bytes32 s) public returns(address) {
         require(msg.sender==api, "only the API is allowed to register");
         // reg is a signed message
         // extract signer's address and the shared secret
         // set registered and index
-        index.push(reg); // todo fix
+        bytes32 h = sha256(bytes(secret));
+        address shareholder = ecrecover(h, v, r, s);
+        require(registered[secret]==address(0x0), "already registered");
+        require(shareholder!=address(0x0), "invalid signature");
+        registered[secret] = shareholder;
+        index.push(secret);
+        return shareholder;
     }
 
     function addVoting(address voting) public restrict {
