@@ -1,13 +1,23 @@
 pragma solidity >=0.0;
 
 import "./TokenErc20Ifc.sol";
+import "./owned.sol";
 
-contract Share is TokenErc20 {
+contract Shares is TokenErc20, owned {
+    mapping (address => uint256) shareholders;
+    bool public locked = false; // lock before assembly starts
+    function setShareholder(address shareholder, uint256 votes) public restrict {
+        require(!locked, "configuration is already locked");
+        shareholders[shareholder] = votes;
+    }
+    function lock() public restrict {
+        locked = true;
+    }
     function name() public view returns (string memory) {
-        return "OneAddressOneVote";
+        return "Shareholder Management";
     }
     function symbol() public view returns (string memory) {
-        return "Đ";
+        return "$h";
     }
     function decimals() public view returns (uint8) {
         return 0;
@@ -15,8 +25,8 @@ contract Share is TokenErc20 {
     function totalSupply() public view returns (uint256) {
         return 0;
     }
-    function balanceOf(address) public view returns (uint256 balance) {
-        return 2;
+    function balanceOf(address shareholder) public view returns (uint256 balance) {
+        return shareholders[shareholder];
     }
     function transfer(address, uint256) public returns (bool success) {
         return false;
