@@ -79,33 +79,33 @@ contract Voting is owned {
     function votes() public view isclosed returns(uint256, uint256) {
         return (voting.aye, voting.nay);
     }
-    function canVote() public view returns(bool) {
-        return !closed()&&!voting.voters[msg.sender];
+    function canVote(address sender) public view returns(bool) {
+        return !closed()&&!voting.voters[sender];
     }
-    function voteYes() public returns(uint256) {
+    function voteYes(address sender) public returns(uint256) {
         require(!closed(), "voting is already closed");
         require(started(), "voting is not yet started");
-        require(!voting.voters[msg.sender], "already voted");
-        voting.voters[msg.sender] = true;
+        require(!voting.voters[sender], "already voted");
+        voting.voters[sender] = true;
         if (voting.tokenErc20==TokenErc20(0x0)) {
             ++voting.aye;
             return 1;
         } else {
-            voting.aye+=voting.tokenErc20.balanceOf(msg.sender);
-            return voting.tokenErc20.balanceOf(msg.sender);
+            voting.aye+=voting.tokenErc20.balanceOf(sender);
+            return voting.tokenErc20.balanceOf(sender);
         }
     }
-    function voteNo() public returns(uint256) {
+    function voteNo(address sender) public returns(uint256) {
         require(!closed(), "voting is already closed");
         require(started(), "voting is not yet started");
-        require(!voting.voters[msg.sender], "already voted");
-        voting.voters[msg.sender] = true;
+        require(!voting.voters[sender], "already voted");
+        voting.voters[sender] = true;
         if (voting.tokenErc20==TokenErc20(0x0)) {
             ++voting.nay;
             return 1;
         } else {
-            voting.nay+=voting.tokenErc20.balanceOf(msg.sender);
-            return voting.tokenErc20.balanceOf(msg.sender);
+            voting.nay+=voting.tokenErc20.balanceOf(sender);
+            return voting.tokenErc20.balanceOf(sender);
         }
     }
 }
