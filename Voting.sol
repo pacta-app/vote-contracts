@@ -4,8 +4,6 @@ import "./owned.sol";
 import "./TokenErc20Ifc.sol";
 
 contract Voting is owned {
-    //using VotingLib for VotingLib.Voting;
-    //VotingLib.Voting private voting;
     struct Data {
         string title;
         string proposal;
@@ -21,7 +19,7 @@ contract Voting is owned {
       require(closed(), "voting not yet closed");
       _;
     }
-    constructor(string memory t, string memory p, TokenErc20 token) public {
+   constructor(string memory t, string memory p, TokenErc20 token) public {
       require(bytes(t).length>0, "voting title is required");
       require(bytes(p).length>0, "voting proposal is required");
       voting.title = t;
@@ -31,6 +29,15 @@ contract Voting is owned {
       voting.tokenErc20 = token;
     }
     function setVotingTime(uint256 starttime, uint256 endtime) public restrict {
+      if (starttime==0&&endtime>0) {
+        starttime = now;
+        endtime += starttime;
+      }
+      require(endtime!=0, "endttime is not defined");
+      require(starttime!=0, "startime is not defined");
+      require(endtime>starttime, "endttime is not after starttime");
+      require(starttime>=now, "start time must be in the future");
+      require(voting.starttime==0&&voting.endtime==0, "time is already configured");
       voting.starttime = starttime;
       voting.endtime = endtime;
     }
@@ -82,30 +89,30 @@ contract Voting is owned {
     function canVote(address sender) public view returns(bool) {
         return !closed()&&!voting.voters[sender];
     }
-    function voteYes(address sender) public returns(uint256) {
+    function voteYes(bytes32 hash, uint8 v, bytes32 r, bytes32 s) public returns(bytes memory message, address shareholder, uint256 shares) {
         require(!closed(), "voting is already closed");
         require(started(), "voting is not yet started");
-        require(!voting.voters[sender], "already voted");
-        voting.voters[sender] = true;
-        if (voting.tokenErc20==TokenErc20(0x0)) {
-            ++voting.aye;
-            return 1;
-        } else {
-            voting.aye+=voting.tokenErc20.balanceOf(sender);
-            return voting.tokenErc20.balanceOf(sender);
-        }
+        message = abi.encodePacked(address(this), "YES");
+        require(hash == keccak256(message), "wrong hash value sent");
+        shareholder = ecrecover(hash, v, r, s);
+        require(shareholder!=address(0x0), "identification failed due to invalid signature");
+        require(!voting.voters[shareholder], "already voted");
+        shares = voting.tokenErc20.balanceOf(shareholder);
+        require(shares>0, "not a validated shareholder");
+        voting.voters[shareholder] = true;
+        voting.aye+=shares;
     }
-    function voteNo(address sender) public returns(uint256) {
+    function voteNo(bytes32 hash, uint8 v, bytes32 r, bytes32 s) public returns(bytes memory message, address shareholder, uint256 shares) {
         require(!closed(), "voting is already closed");
         require(started(), "voting is not yet started");
-        require(!voting.voters[sender], "already voted");
-        voting.voters[sender] = true;
-        if (voting.tokenErc20==TokenErc20(0x0)) {
-            ++voting.nay;
-            return 1;
-        } else {
-            voting.nay+=voting.tokenErc20.balanceOf(sender);
-            return voting.tokenErc20.balanceOf(sender);
-        }
+        message = abi.encodePacked(address(this), "NO");
+        require(hash == keccak256(message), "wrong hash value sent");
+        shareholder = ecrecover(hash, v, r, s);
+        require(shareholder!=address(0x0), "identification failed due to invalid signature");
+        require(!voting.voters[shareholder], "already voted");
+        shares = voting.tokenErc20.balanceOf(shareholder);
+        require(shares>0, "not a validated shareholder");
+        voting.voters[shareholder] = true;
+        voting.nay+=shares;
     }
 }

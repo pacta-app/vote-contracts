@@ -2,6 +2,7 @@ pragma solidity >=0.0;
 
 import "./owned.sol";
 import "./Shares.sol";
+import "./owned.sol";
 
 contract Assembly is owned {
 
@@ -44,15 +45,6 @@ contract Assembly is owned {
         secrets.push(secret);
     }
 
-/*     function vote(string memory secret, uint8 v, bytes32 r, bytes32 s) public {
-         require(msg.sender==api, "only the API Server is allowed to vote");
-        require(bytes(secret).length>0, "not a valid secret");
-        address shareholder = verify(secret, v, r, s);
-        require(shareholder!=address(0x0), "identification failed due to invalid signature");
-        require(registrations[secret]==address(0x0), "secret has already been used");
-        require(bytes(shareholders[shareholder]).length==0, "you are already registered");       
-    }
- */
     // administration, restricted to assembly owner
     
     function setShareholder(address shareholder, uint256 votes) public restrict {
@@ -60,7 +52,6 @@ contract Assembly is owned {
     }
 
     function addVoting(address voting) public restrict {
-        //voting.setParent
         votings.push(voting);
     }
 
