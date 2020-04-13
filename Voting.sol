@@ -92,7 +92,7 @@ contract Voting is owned {
     function voteYes(bytes32 hash, uint8 v, bytes32 r, bytes32 s) public returns(bytes memory message, address shareholder, uint256 shares) {
         require(!closed(), "voting is already closed");
         require(started(), "voting is not yet started");
-        message = abi.encodePacked(address(this), "YES");
+        message = abi.encodePacked("YES on ", address(this));
         require(hash == keccak256(message), "wrong hash value sent");
         shareholder = ecrecover(hash, v, r, s);
         require(shareholder!=address(0x0), "identification failed due to invalid signature");
@@ -105,7 +105,7 @@ contract Voting is owned {
     function voteNo(bytes32 hash, uint8 v, bytes32 r, bytes32 s) public returns(bytes memory message, address shareholder, uint256 shares) {
         require(!closed(), "voting is already closed");
         require(started(), "voting is not yet started");
-        message = abi.encodePacked(address(this), "NO");
+        message = abi.encodePacked("NO on ", address(this));
         require(hash == keccak256(message), "wrong hash value sent");
         shareholder = ecrecover(hash, v, r, s);
         require(shareholder!=address(0x0), "identification failed due to invalid signature");
