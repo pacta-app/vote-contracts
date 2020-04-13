@@ -89,10 +89,22 @@ contract Voting is owned {
     function canVote(address sender) public view returns(bool) {
         return !closed()&&!voting.voters[sender];
     }
+    function addressToBytes(address a) internal pure returns (bytes memory) {
+        bytes memory b = new bytes(20);
+        for (uint i = 0; i < 20; i++)
+          b[i] = byte(uint8(uint(a) / (2**(8*(19 - i)))));
+        return b;
+    }
+    function test(bytes32 hash, uint8 v, bytes32 r, bytes32 s) public view returns(bytes32 calculatedHash, bytes memory message, address shareholder, uint256 shares) {
+        message = abi.encodePacked("TEST on ", addressToBytes(address(this)));
+        calculatedHash = keccak256(message);
+        shareholder = ecrecover(hash, v, r, s);
+        shares = voting.tokenErc20.balanceOf(shareholder);
+    }
     function voteYes(bytes32 hash, uint8 v, bytes32 r, bytes32 s) public returns(bytes memory message, address shareholder, uint256 shares) {
         require(!closed(), "voting is already closed");
         require(started(), "voting is not yet started");
-        message = abi.encodePacked("YES on ", address(this));
+        message = abi.encodePacked("YES on ", addressToBytes(address(this)));
         require(hash == keccak256(message), "wrong hash value sent");
         shareholder = ecrecover(hash, v, r, s);
         require(shareholder!=address(0x0), "identification failed due to invalid signature");
@@ -105,7 +117,7 @@ contract Voting is owned {
     function voteNo(bytes32 hash, uint8 v, bytes32 r, bytes32 s) public returns(bytes memory message, address shareholder, uint256 shares) {
         require(!closed(), "voting is already closed");
         require(started(), "voting is not yet started");
-        message = abi.encodePacked("NO on ", address(this));
+        message = abi.encodePacked("NO on ", addressToBytes(address(this)));
         require(hash == keccak256(message), "wrong hash value sent");
         shareholder = ecrecover(hash, v, r, s);
         require(shareholder!=address(0x0), "identification failed due to invalid signature");
