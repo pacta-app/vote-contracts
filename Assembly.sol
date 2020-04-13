@@ -55,4 +55,8 @@ contract Assembly is owned {
         votings.push(voting);
     }
 
+    function lock() public restrict {
+        shares.lock();
+    }
+
 }
