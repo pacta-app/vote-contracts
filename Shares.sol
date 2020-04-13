@@ -11,6 +11,7 @@ contract Shares is TokenErc20, owned {
         shareholders[shareholder] = votes;
     }
     function lock() public restrict {
+        require(!locked, "configuration is already locked");
         locked = true;
     }
     function name() public view returns (string memory) {
