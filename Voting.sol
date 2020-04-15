@@ -2,8 +2,9 @@ pragma solidity >=0.0;
 
 import "./owned.sol";
 import "./TokenErc20Ifc.sol";
+import "./VotingIfc.sol";
 
-contract Voting is owned {
+contract Voting is VotingIfc, owned {
     struct Data {
         string title;
         string proposal;

@@ -2,7 +2,7 @@ pragma solidity >=0.0;
 
 import "./owned.sol";
 import "./Shares.sol";
-import "./owned.sol";
+import "./VotingIfc.sol";
 
 contract Assembly is owned {
 
@@ -12,8 +12,10 @@ contract Assembly is owned {
     string[] public secrets; // list of registered secrets
     address public api; // address of the api's contratcs
     address[] public votings; // list of votings
+    string public identifier; // you my set any text here, e.w. th ecompany name
 
-    constructor(address _api) public {
+    constructor(string memory _identifier, address _api) public {
+        identifier = _identifier;
         api = _api;
         shares = new Shares();
     }
@@ -51,8 +53,9 @@ contract Assembly is owned {
         shares.setShareholder(shareholder, votes);
     }
 
-    function addVoting(address voting) public restrict {
-        votings.push(voting);
+    function addVoting(VotingIfc voting) public restrict {
+        require(shares==voting.tokenErc20(), "wrong token in voting");
+        votings.push(address(voting));
     }
 
     function lock() public restrict {
