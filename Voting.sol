@@ -11,6 +11,7 @@ contract Voting is owned {
         uint256 endtime;
         uint256 aye;
         uint256 nay;
+        uint256 abstain;
         TokenErc20 tokenErc20;
         mapping(address => bool) voters;
     }
@@ -58,6 +59,9 @@ contract Voting is owned {
     }
     function nay() public view isclosed returns(uint256) {
       return voting.nay;
+    }
+    function abstain() public view isclosed returns(uint256) {
+      return voting.abstain;
     }
     function tokenErc20() public view returns(TokenErc20) {
       return voting.tokenErc20;
@@ -126,5 +130,18 @@ contract Voting is owned {
         require(shares>0, "not a validated shareholder");
         voting.voters[shareholder] = true;
         voting.nay+=shares;
+    }
+    function abstain(bytes32 hash, uint8 v, bytes32 r, bytes32 s) public returns(bytes memory message, address shareholder, uint256 shares) {
+        require(!closed(), "voting is already closed");
+        require(started(), "voting is not yet started");
+        message = abi.encodePacked("ABSTAIN on ", addressToBytes(address(this)));
+        require(hash == keccak256(message), "wrong hash value sent");
+        shareholder = ecrecover(hash, v, r, s);
+        require(shareholder!=address(0x0), "identification failed due to invalid signature");
+        require(!voting.voters[shareholder], "already voted");
+        shares = voting.tokenErc20.balanceOf(shareholder);
+        require(shares>0, "not a validated shareholder");
+        voting.voters[shareholder] = true;
+        voting.abstain+=shares;
     }
 }
