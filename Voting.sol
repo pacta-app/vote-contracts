@@ -22,7 +22,12 @@ contract Voting is VotingIfc, owned {
       require(closed(), "voting not yet closed");
       _;
     }
-   constructor(string memory t, string memory p, TokenErc20 token) public {
+    modifier isRunning {
+        require(!closed(), "voting is already closed");
+        require(started(), "voting is not yet started");
+        _;
+    }
+    constructor(string memory t, string memory p, TokenErc20 token) public {
       require(bytes(t).length>0, "voting title is required");
       require(bytes(p).length>0, "voting proposal is required");
       voting.title = t;
@@ -104,16 +109,8 @@ contract Voting is VotingIfc, owned {
           b[i] = byte(uint8(uint(a) / (2**(8*(19 - i)))));
         return b;
     }
-    function test(bytes32 hash, uint8 v, bytes32 r, bytes32 s) public view returns(bytes32 calculatedHash, bytes memory message, address shareholder, uint256 shares) {
-        message = abi.encodePacked("TEST on ", addressToBytes(address(this)));
-        calculatedHash = keccak256(message);
-        shareholder = ecrecover(hash, v, r, s);
-        shares = voting.tokenErc20.balanceOf(shareholder);
-    }
-    function voteYes(bytes32 hash, uint8 v, bytes32 r, bytes32 s) public returns(bytes memory message, address shareholder, uint256 shares) {
-        require(!closed(), "voting is already closed");
-        require(started(), "voting is not yet started");
-        message = abi.encodePacked("YES on ", addressToBytes(address(this)));
+    function castVote(string memory text, bytes32 hash, uint8 v, bytes32 r, bytes32 s) internal isRunning returns(bytes memory message, address shareholder, uint256 shares) {
+        message = abi.encodePacked(text, addressToBytes(address(this)));
         require(hash == keccak256(message), "wrong hash value sent");
         shareholder = ecrecover(hash, v, r, s);
         require(shareholder!=address(0x0), "identification failed due to invalid signature");
@@ -121,45 +118,21 @@ contract Voting is VotingIfc, owned {
         shares = voting.tokenErc20.balanceOf(shareholder);
         require(shares>0, "not a validated shareholder");
         voting.voters[shareholder] = true;
+    }
+    function voteYes(bytes32 hash, uint8 v, bytes32 r, bytes32 s) public returns(bytes memory message, address shareholder, uint256 shares) {
+        (message, shareholder, shares) = castVote("YES on ", hash, v, r, s);
         voting.aye+=shares;
     }
     function voteNo(bytes32 hash, uint8 v, bytes32 r, bytes32 s) public returns(bytes memory message, address shareholder, uint256 shares) {
-        require(!closed(), "voting is already closed");
-        require(started(), "voting is not yet started");
-        message = abi.encodePacked("NO on ", addressToBytes(address(this)));
-        require(hash == keccak256(message), "wrong hash value sent");
-        shareholder = ecrecover(hash, v, r, s);
-        require(shareholder!=address(0x0), "identification failed due to invalid signature");
-        require(!voting.voters[shareholder], "already voted");
-        shares = voting.tokenErc20.balanceOf(shareholder);
-        require(shares>0, "not a validated shareholder");
-        voting.voters[shareholder] = true;
+        (message, shareholder, shares) = castVote("NO on ", hash, v, r, s);
         voting.nay+=shares;
     }
     function abstain(bytes32 hash, uint8 v, bytes32 r, bytes32 s) public returns(bytes memory message, address shareholder, uint256 shares) {
-        require(!closed(), "voting is already closed");
-        require(started(), "voting is not yet started");
-        message = abi.encodePacked("ABSTAIN on ", addressToBytes(address(this)));
-        require(hash == keccak256(message), "wrong hash value sent");
-        shareholder = ecrecover(hash, v, r, s);
-        require(shareholder!=address(0x0), "identification failed due to invalid signature");
-        require(!voting.voters[shareholder], "already voted");
-        shares = voting.tokenErc20.balanceOf(shareholder);
-        require(shares>0, "not a validated shareholder");
-        voting.voters[shareholder] = true;
+        (message, shareholder, shares) = castVote("ABSTAIN on ", hash, v, r, s);
         voting.abstain+=shares;
     }
     function standDown(bytes32 hash, uint8 v, bytes32 r, bytes32 s) public returns(bytes memory message, address shareholder, uint256 shares) {
-        require(!closed(), "voting is already closed");
-        require(started(), "voting is not yet started");
-        message = abi.encodePacked("STAND_DOWN on ", addressToBytes(address(this)));
-        require(hash == keccak256(message), "wrong hash value sent");
-        shareholder = ecrecover(hash, v, r, s);
-        require(shareholder!=address(0x0), "identification failed due to invalid signature");
-        require(!voting.voters[shareholder], "already voted");
-        shares = voting.tokenErc20.balanceOf(shareholder);
-        require(shares>0, "not a validated shareholder");
-        voting.voters[shareholder] = true;
+        (message, shareholder, shares) = castVote("STAND_DOWN on ", hash, v, r, s);
         voting.standDown+=shares;
     }
 }

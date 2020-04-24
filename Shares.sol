@@ -5,9 +5,13 @@ import "./owned.sol";
 
 contract Shares is TokenErc20, owned {
     mapping (address => uint256) shareholders;
+    uint256 total = 0;
     bool public locked = false; // lock before assembly starts
     function setShareholder(address shareholder, uint256 votes) public restrict {
         require(!locked, "configuration is already locked");
+        require(total>=shareholders[shareholder], "internal error on total supply");
+        total -= shareholders[shareholder]; // remove previous shares (default: 0)
+        total += votes; // add current number of shares
         shareholders[shareholder] = votes;
     }
     function lock() public restrict {
@@ -24,7 +28,7 @@ contract Shares is TokenErc20, owned {
         return 0;
     }
     function totalSupply() public view returns (uint256) {
-        return 0;
+        return total;
     }
     function balanceOf(address shareholder) public view returns (uint256 balance) {
         return shareholders[shareholder];
