@@ -127,11 +127,11 @@ contract Voting is VotingIfc, owned {
         (message, shareholder, shares) = castVote("NO on ", hash, v, r, s);
         voting.nay+=shares;
     }
-    function abstain(bytes32 hash, uint8 v, bytes32 r, bytes32 s) public returns(bytes memory message, address shareholder, uint256 shares) {
+    function abstainVoting(bytes32 hash, uint8 v, bytes32 r, bytes32 s) public returns(bytes memory message, address shareholder, uint256 shares) {
         (message, shareholder, shares) = castVote("ABSTAIN on ", hash, v, r, s);
         voting.abstain+=shares;
     }
-    function standDown(bytes32 hash, uint8 v, bytes32 r, bytes32 s) public returns(bytes memory message, address shareholder, uint256 shares) {
+    function standDownVoting(bytes32 hash, uint8 v, bytes32 r, bytes32 s) public returns(bytes memory message, address shareholder, uint256 shares) {
         (message, shareholder, shares) = castVote("STAND_DOWN on ", hash, v, r, s);
         voting.standDown+=shares;
     }
