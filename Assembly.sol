@@ -4,8 +4,8 @@ import "./owned.sol";
 import "./Shares.sol";
 import "./VotingIfc.sol";
 
-contract Assembly is owned {
 
+contract Assembly is owned {
     Shares public shares; // shareholder token
     mapping(string => address) public registrations; // users that registered, maps secret to address
     mapping(address => string) public shareholders; // list of registered shareholders
@@ -28,38 +28,66 @@ contract Assembly is owned {
         return votings.length;
     }
 
-    function verify(string memory secret, uint8 v, bytes32 r, bytes32 s) public pure returns (address sender) {
+    function verify(
+        string memory secret,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) public pure returns (address sender) {
         bytes32 hash = keccak256(bytes(secret));
         sender = ecrecover(hash, v, r, s);
     }
 
     // shareholder's access, security by signed messages
 
-    function register(string memory secret, uint8 v, bytes32 r, bytes32 s) public {
+    function register(
+        string memory secret,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) public {
         //require(msg.sender==api, "only the API Server is allowed to register");
-        require(bytes(secret).length>0, "not a valid secret");
+        require(bytes(secret).length > 0, "not a valid secret");
         address shareholder = verify(secret, v, r, s);
-        require(shareholder!=address(0x0), "identification failed due to invalid signature");
-        require(registrations[secret]==address(0x0), "secret has already been used");
-        require(bytes(shareholders[shareholder]).length==0, "you are already registered");
+        require(
+            shareholder != address(0x0),
+            "identification failed due to invalid signature"
+        );
+        require(
+            registrations[secret] == address(0x0),
+            "secret has already been used"
+        );
+        require(
+            bytes(shareholders[shareholder]).length == 0,
+            "you are already registered"
+        );
         registrations[secret] = shareholder;
         shareholders[shareholder] = secret;
         secrets.push(secret);
     }
 
     // administration, restricted to assembly owner
-    
-    function setShareholder(address shareholder, uint256 votes) public restrict {
+
+    function setShareholder(address shareholder, uint256 votes)
+        public
+        restrict
+    {
         shares.setShareholder(shareholder, votes);
     }
 
+    function setShareholders(
+        address[] memory shareholder,
+        uint256[] memory votes
+    ) public restrict {
+        shares.setShareholders(shareholder, votes);
+    }
+
     function addVoting(VotingIfc voting) public restrict {
-        require(shares==voting.tokenErc20(), "wrong token in voting");
+        require(shares == voting.tokenErc20(), "wrong token in voting");
         votings.push(address(voting));
     }
 
     function lock() public restrict {
         shares.lock();
     }
-
 }
