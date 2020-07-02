@@ -4,7 +4,6 @@ import "./owned.sol";
 import "./TokenErc20Ifc.sol";
 import "./VotingIfc.sol";
 
-
 contract Voting is VotingIfc, owned {
     struct Data {
         string title;
@@ -74,6 +73,10 @@ contract Voting is VotingIfc, owned {
 
     function endtime() public view returns (uint256) {
         return voting.endtime;
+    }
+
+    function currenttime() public view returns (uint256) {
+        return now;
     }
 
     function aye() public view isclosed returns (uint256) {

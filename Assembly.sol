@@ -1,22 +1,20 @@
 pragma solidity >=0.0;
 
 import "./owned.sol";
+import "./hasapi.sol";
 import "./Shares.sol";
 import "./VotingIfc.sol";
 
-
-contract Assembly is owned {
+contract Assembly is owned, hasapi {
     Shares public shares; // shareholder token
     mapping(string => address) public registrations; // users that registered, maps secret to address
     mapping(address => string) public shareholders; // list of registered shareholders
     string[] public secrets; // list of registered secrets
-    address public api; // address of the api's contratcs
     address[] public votings; // list of votings
     string public identifier; // you my set any text here, e.w. th ecompany name
 
-    constructor(string memory _identifier, address _api) public {
+    constructor(string memory _identifier, address _api) public hasapi(_api) {
         identifier = _identifier;
-        api = _api;
         shares = new Shares();
     }
 
@@ -45,8 +43,7 @@ contract Assembly is owned {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) public {
-        //require(msg.sender==api, "only the API Server is allowed to register");
+    ) public apionly {
         require(bytes(secret).length > 0, "not a valid secret");
         address shareholder = verify(secret, v, r, s);
         require(
