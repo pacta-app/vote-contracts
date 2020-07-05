@@ -1,20 +1,23 @@
 pragma solidity >=0.0;
 
 import "./owned.sol";
-import "./hasapi.sol";
+import "./libsign.sol";
 import "./Shares.sol";
-import "./VotingIfc.sol";
+import "./Voting.sol";
+import "./Customer.sol";
 
-contract Assembly is owned, hasapi {
+contract Assembly is owned {
     Shares public shares; // shareholder token
     mapping(string => address) public registrations; // users that registered, maps secret to address
     mapping(address => string) public shareholders; // list of registered shareholders
     string[] public secrets; // list of registered secrets
     address[] public votings; // list of votings
     string public identifier; // you my set any text here, e.w. th ecompany name
+    Customer private customer; // customer of this assembly
 
-    constructor(string memory _identifier, address _api) public hasapi(_api) {
+    constructor(string memory _identifier, Customer _customer) public {
         identifier = _identifier;
+        customer = _customer;
         shares = new Shares();
     }
 
@@ -26,16 +29,6 @@ contract Assembly is owned, hasapi {
         return votings.length;
     }
 
-    function verify(
-        string memory secret,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) public pure returns (address sender) {
-        bytes32 hash = keccak256(bytes(secret));
-        sender = ecrecover(hash, v, r, s);
-    }
-
     // shareholder's access, security by signed messages
 
     function register(
@@ -43,9 +36,8 @@ contract Assembly is owned, hasapi {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) public apionly {
-        require(bytes(secret).length > 0, "not a valid secret");
-        address shareholder = verify(secret, v, r, s);
+    ) public restrict {
+        address shareholder = libsign.verify(secret, v, r, s);
         require(
             shareholder != address(0x0),
             "identification failed due to invalid signature"
@@ -70,18 +62,28 @@ contract Assembly is owned, hasapi {
         restrict
     {
         shares.setShareholder(shareholder, votes);
+        customer.consume(1);
     }
 
     function setShareholders(
         address[] memory shareholder,
         uint256[] memory votes
     ) public restrict {
+        require(
+            shareholder.length == votes.length,
+            "number of shareholders must match number of shares"
+        );
         shares.setShareholders(shareholder, votes);
+        customer.consume(shareholder.length);
     }
 
-    function addVoting(VotingIfc voting) public restrict {
-        require(shares == voting.tokenErc20(), "wrong token in voting");
-        votings.push(address(voting));
+    function newVoting(string memory title, string memory proposal)
+        public
+        restrict /*signed()*/
+    {
+        Voting v = new Voting(title, proposal, shares);
+        v.changeOwner(owner);
+        votings.push(address(v));
     }
 
     function lock() public restrict {

@@ -29,14 +29,14 @@ contract Voting is VotingIfc, owned {
     }
 
     constructor(
-        string memory t,
-        string memory p,
+        string memory title,
+        string memory proposal,
         TokenErc20 token
     ) public {
-        require(bytes(t).length > 0, "voting title is required");
-        require(bytes(p).length > 0, "voting proposal is required");
-        voting.title = t;
-        voting.proposal = p;
+        require(bytes(title).length > 0, "voting title is required");
+        require(bytes(proposal).length > 0, "voting proposal is required");
+        voting.title = title;
+        voting.proposal = proposal;
         voting.starttime = 0;
         voting.endtime = 0;
         voting.tokenErc20 = token;

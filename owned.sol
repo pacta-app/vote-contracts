@@ -20,7 +20,7 @@ contract owned {
         emit feePaid(owner, amount);
     }
 
-    function getOwner() view public restrict returns (address payable) {
+    function getOwner() view public returns (address payable) {
         return owner;
     }
 
