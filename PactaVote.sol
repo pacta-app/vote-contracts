@@ -34,7 +34,7 @@ contract PactaVote is owned {
         emit registered(sender, c, name);
     }
 
-    event removed(address, string);
+    event removed(address);
 
     function remove(
         uint8 v,
@@ -43,9 +43,8 @@ contract PactaVote is owned {
     ) public restrict returns (address sender, Customer c) {
         sender = libsign.verify("REMOVE", v, r, s);
         c = customers[sender];
-        string memory name = c.name();
         require(address(c) != address(0x0), "customer does not exists");
         delete c;
-        emit removed(sender, name);
+        emit removed(sender);
     }
 }
