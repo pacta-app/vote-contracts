@@ -47,7 +47,7 @@ contract Customer is owned, signed {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) public restrict issigned(_name, v, r, s) {
+    ) public restrict issigned(abi.encode(_name), v, r, s) {
         emit renamed(name, _name);
         name = _name;
     }
@@ -59,9 +59,9 @@ contract Customer is owned, signed {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) public restrict issigned(_name, v, r, s) {
+    ) public restrict issigned(abi.encode(_name), v, r, s) {
         require(paidShareholders > 0, "payment required");
-        Assembly a = new Assembly(_name, this);
+        Assembly a = new Assembly(_name, this, signatory);
         a.changeOwner(owner);
         assemblies.push(a);
         emit assemblyCreated(a, _name);

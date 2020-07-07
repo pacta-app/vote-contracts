@@ -1,12 +1,13 @@
 pragma solidity >=0.0;
 
 import "./owned.sol";
+import "./signed.sol";
 import "./libsign.sol";
 import "./Shares.sol";
 import "./Voting.sol";
 import "./Customer.sol";
 
-contract Assembly is owned {
+contract Assembly is owned, signed {
     Shares public shares; // shareholder token
     mapping(string => address) public registrations; // users that registered, maps secret to address
     mapping(address => string) public shareholders; // list of registered shareholders
@@ -15,7 +16,11 @@ contract Assembly is owned {
     string public identifier; // you my set any text here, e.w. th ecompany name
     Customer private customer; // customer of this assembly
 
-    constructor(string memory _identifier, Customer _customer) public {
+    constructor(
+        string memory _identifier,
+        Customer _customer,
+        address _signatory
+    ) public signed(_signatory) {
         identifier = _identifier;
         customer = _customer;
         shares = new Shares();
@@ -37,7 +42,7 @@ contract Assembly is owned {
         bytes32 r,
         bytes32 s
     ) public restrict {
-        address shareholder = libsign.verify(secret, v, r, s);
+        address shareholder = libsign.verify(abi.encode(secret), v, r, s);
         require(
             shareholder != address(0x0),
             "identification failed due to invalid signature"
@@ -57,18 +62,24 @@ contract Assembly is owned {
 
     // administration, restricted to assembly owner
 
-    function setShareholder(address shareholder, uint256 votes)
-        public
-        restrict
-    {
+    function setShareholder(
+        address shareholder,
+        uint256 votes,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) public restrict issigned(abi.encode(shareholder, votes), v, r, s) {
         shares.setShareholder(shareholder, votes);
         customer.consume(1);
     }
 
     function setShareholders(
         address[] memory shareholder,
-        uint256[] memory votes
-    ) public restrict {
+        uint256[] memory votes,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) public restrict issigned(abi.encode(shareholder, votes), v, r, s) {
         require(
             shareholder.length == votes.length,
             "number of shareholders must match number of shares"

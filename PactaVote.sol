@@ -23,7 +23,7 @@ contract PactaVote is owned {
         bytes32 r,
         bytes32 s
     ) public restrict returns (address sender, Customer c) {
-        sender = libsign.verify(name, v, r, s);
+        sender = libsign.verify(abi.encode(name), v, r, s);
         require(
             address(customers[sender]) == address(0x0),
             "customer already exists"
@@ -41,7 +41,7 @@ contract PactaVote is owned {
         bytes32 r,
         bytes32 s
     ) public restrict returns (address sender, Customer c) {
-        sender = libsign.verify("REMOVE", v, r, s);
+        sender = libsign.verify(abi.encode("EMPTY"), v, r, s);
         c = customers[sender];
         require(address(c) != address(0x0), "customer does not exists");
         delete c;

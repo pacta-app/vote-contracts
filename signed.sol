@@ -7,7 +7,7 @@ contract signed {
 
     // signatory has signed message
     modifier issigned(
-        string memory secret,
+        bytes memory secret,
         uint8 v,
         bytes32 r,
         bytes32 s
@@ -20,9 +20,18 @@ contract signed {
         signatory = _signatory;
     }
 
+    function verify(
+        bytes memory secret,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) internal pure returns (address sender) {
+        sender = libsign.verify(secret, v, r, s);
+    }
+
     // signatory has signed message
     function verified(
-        string memory secret,
+        bytes memory secret,
         uint8 v,
         bytes32 r,
         bytes32 s
@@ -30,7 +39,7 @@ contract signed {
         sender = libsign.verify(secret, v, r, s);
         require(
             sender == signatory,
-            "access denied, you are not the contract owner"
+            "access denied, you are not the signatory of this contract"
         );
     }
 }
