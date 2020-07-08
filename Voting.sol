@@ -1,10 +1,11 @@
 pragma solidity >=0.0;
 
 import "./owned.sol";
+import "./signed.sol";
 import "./TokenErc20Ifc.sol";
 import "./VotingIfc.sol";
 
-contract Voting is VotingIfc, owned {
+contract Voting is VotingIfc, owned, signed {
     struct Data {
         string title;
         string proposal;
@@ -18,10 +19,14 @@ contract Voting is VotingIfc, owned {
         mapping(address => bool) voters;
     }
     Data internal voting;
+
+    enum Vote {Yes, No, Abstain, StandDown}
+
     modifier isclosed {
         require(closed(), "voting not yet closed");
         _;
     }
+
     modifier isRunning {
         require(!closed(), "voting is already closed");
         require(started(), "voting is not yet started");
@@ -31,8 +36,9 @@ contract Voting is VotingIfc, owned {
     constructor(
         string memory title,
         string memory proposal,
-        TokenErc20 token
-    ) public {
+        TokenErc20 token,
+        address _signatory
+    ) public signed(_signatory) {
         require(bytes(title).length > 0, "voting title is required");
         require(bytes(proposal).length > 0, "voting proposal is required");
         voting.title = title;
@@ -42,7 +48,17 @@ contract Voting is VotingIfc, owned {
         voting.tokenErc20 = token;
     }
 
-    function setVotingTime(uint256 starttime, uint256 endtime) public restrict {
+    function setVotingTime(
+        uint256 starttime,
+        uint256 endtime,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    )
+        public
+        restrict
+        issigned(abi.encode(starttime, endtime, address(this)), v, r, s)
+    {
         if (starttime == 0 && endtime > 0) {
             starttime = now;
             endtime += starttime;
@@ -157,104 +173,24 @@ contract Voting is VotingIfc, owned {
     }
 
     function castVote(
-        string memory text,
-        bytes32 hash,
+        Vote vote,
         uint8 v,
         bytes32 r,
         bytes32 s
-    )
-        internal
-        isRunning
-        returns (
-            bytes memory message,
-            address shareholder,
-            uint256 shares
-        )
-    {
-        message = abi.encodePacked(text, addressToBytes(address(this)));
-        require(hash == keccak256(message), "wrong hash value sent");
-        shareholder = ecrecover(hash, v, r, s);
-        require(
-            shareholder != address(0x0),
-            "identification failed due to invalid signature"
-        );
+    ) public restrict isRunning returns (address shareholder, uint256 shares) {
+        shareholder = verify(abi.encode(vote, address(this)), v, r, s);
         require(!voting.voters[shareholder], "already voted");
         shares = voting.tokenErc20.balanceOf(shareholder);
         require(shares > 0, "not a validated shareholder");
         voting.voters[shareholder] = true;
-    }
-
-    function voteYes(
-        bytes32 hash,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    )
-        public
-        returns (
-            bytes memory message,
-            address shareholder,
-            uint256 shares
-        )
-    {
-        (message, shareholder, shares) = castVote("YES on ", hash, v, r, s);
-        voting.aye += shares;
-    }
-
-    function voteNo(
-        bytes32 hash,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    )
-        public
-        returns (
-            bytes memory message,
-            address shareholder,
-            uint256 shares
-        )
-    {
-        (message, shareholder, shares) = castVote("NO on ", hash, v, r, s);
-        voting.nay += shares;
-    }
-
-    function abstainVoting(
-        bytes32 hash,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    )
-        public
-        returns (
-            bytes memory message,
-            address shareholder,
-            uint256 shares
-        )
-    {
-        (message, shareholder, shares) = castVote("ABSTAIN on ", hash, v, r, s);
-        voting.abstain += shares;
-    }
-
-    function standDownVoting(
-        bytes32 hash,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    )
-        public
-        returns (
-            bytes memory message,
-            address shareholder,
-            uint256 shares
-        )
-    {
-        (message, shareholder, shares) = castVote(
-            "STAND_DOWN on ",
-            hash,
-            v,
-            r,
-            s
-        );
-        voting.standDown += shares;
+        if (vote == Vote.Yes) {
+            voting.aye += shares;
+        } else if (vote == Vote.No) {
+            voting.nay += shares;
+        } else if (vote == Vote.Abstain) {
+            voting.abstain += shares;
+        } else if (vote == Vote.StandDown) {
+            voting.standDown += shares;
+        }
     }
 }

@@ -15,7 +15,7 @@ contract PactaVote is owned {
         selfdestruct(owner);
     }
 
-    event registered(address, Customer, string);
+    event registered(address, address, address, string);
 
     function register(
         string memory name,
@@ -23,7 +23,7 @@ contract PactaVote is owned {
         bytes32 r,
         bytes32 s
     ) public restrict returns (address sender, Customer c) {
-        sender = libsign.verify(abi.encode(name), v, r, s);
+        sender = libsign.verify(abi.encode(name, address(this)), v, r, s);
         require(
             address(customers[sender]) == address(0x0),
             "customer already exists"
@@ -31,7 +31,7 @@ contract PactaVote is owned {
         c = new Customer(name, sender);
         c.changeOwner(owner);
         customers[sender] = c;
-        emit registered(sender, c, name);
+        emit registered(address(this), sender, address(c), name);
     }
 
     event removed(address);
@@ -41,7 +41,7 @@ contract PactaVote is owned {
         bytes32 r,
         bytes32 s
     ) public restrict returns (address sender, Customer c) {
-        sender = libsign.verify(abi.encode("EMPTY"), v, r, s);
+        sender = libsign.verify(abi.encode(address(this)), v, r, s);
         c = customers[sender];
         require(address(c) != address(0x0), "customer does not exists");
         delete c;

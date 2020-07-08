@@ -2,12 +2,12 @@ pragma solidity >=0.0;
 
 import "./owned.sol";
 import "./signed.sol";
-import "./Assembly.sol";
+import "./LibCustomer.sol";
 
 contract Customer is owned, signed {
     string private name;
     uint256 private paidShareholders;
-    Assembly[] private assemblies;
+    address[] private assemblies;
 
     modifier fromassembly {
         bool verified = false;
@@ -36,7 +36,7 @@ contract Customer is owned, signed {
         return paidShareholders;
     }
 
-    function getAssemblies() public view restrict returns (Assembly[] memory) {
+    function getAssemblies() public view restrict returns (address[] memory) {
         return assemblies;
     }
 
@@ -47,24 +47,24 @@ contract Customer is owned, signed {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) public restrict issigned(abi.encode(_name), v, r, s) {
+    ) public restrict issigned(abi.encode(_name, address(this)), v, r, s) {
         emit renamed(name, _name);
         name = _name;
     }
 
-    event assemblyCreated(Assembly, string);
+    event assemblyCreated(address, string);
 
     function newAssembly(
         string memory _name,
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) public restrict issigned(abi.encode(_name), v, r, s) {
+    ) public restrict issigned(abi.encode(_name, address(this)), v, r, s) {
         require(paidShareholders > 0, "payment required");
-        Assembly a = new Assembly(_name, this, signatory);
+        owned a = LibCustomer.newAssembly(_name, this, signatory);
         a.changeOwner(owner);
-        assemblies.push(a);
-        emit assemblyCreated(a, _name);
+        assemblies.push(address(a));
+        emit assemblyCreated(address(a), _name);
     }
 
     function payment(uint256 _amount) public restrict {

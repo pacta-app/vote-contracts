@@ -42,7 +42,12 @@ contract Assembly is owned, signed {
         bytes32 r,
         bytes32 s
     ) public restrict {
-        address shareholder = libsign.verify(abi.encode(secret), v, r, s);
+        address shareholder = libsign.verify(
+            abi.encode(secret, address(this)),
+            v,
+            r,
+            s
+        );
         require(
             shareholder != address(0x0),
             "identification failed due to invalid signature"
@@ -68,7 +73,11 @@ contract Assembly is owned, signed {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) public restrict issigned(abi.encode(shareholder, votes), v, r, s) {
+    )
+        public
+        restrict
+        issigned(abi.encode(shareholder, votes, address(this)), v, r, s)
+    {
         shares.setShareholder(shareholder, votes);
         customer.consume(1);
     }
@@ -79,7 +88,11 @@ contract Assembly is owned, signed {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) public restrict issigned(abi.encode(shareholder, votes), v, r, s) {
+    )
+        public
+        restrict
+        issigned(abi.encode(shareholder, votes, address(this)), v, r, s)
+    {
         require(
             shareholder.length == votes.length,
             "number of shareholders must match number of shares"
@@ -88,16 +101,30 @@ contract Assembly is owned, signed {
         customer.consume(shareholder.length);
     }
 
-    function newVoting(string memory title, string memory proposal)
+    event votingCreated(Voting, string, string);
+
+    function newVoting(
+        string memory title,
+        string memory proposal,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    )
         public
-        restrict /*signed()*/
+        restrict
+        issigned(abi.encode(title, proposal, address(this)), v, r, s)
     {
-        Voting v = new Voting(title, proposal, shares);
-        v.changeOwner(owner);
-        votings.push(address(v));
+        Voting voting = new Voting(title, proposal, shares, signatory);
+        voting.changeOwner(owner);
+        votings.push(address(voting));
+        emit votingCreated(voting, title, proposal);
     }
 
-    function lock() public restrict {
+    function lock(
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) public restrict issigned(abi.encode(address(this)), v, r, s) {
         shares.lock();
     }
 }
