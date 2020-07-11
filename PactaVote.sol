@@ -4,6 +4,10 @@ import "./owned.sol";
 import "./libsign.sol";
 import "./Customer.sol";
 
+// analysis:
+// abi.encode(string, uint256, address) costs ~0.0007 ether
+// abi.encodePacked(string, uint256, address) costs ~0.002 ether
+
 contract PactaVote is owned {
     mapping(address => Customer) public customers;
 
@@ -15,36 +19,37 @@ contract PactaVote is owned {
         selfdestruct(owner);
     }
 
-    event registered(address, address, address, string);
-
     function register(
         string memory name,
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) public restrict returns (address sender, Customer c) {
-        sender = libsign.verify(abi.encode(name, address(this)), v, r, s);
+    ) public restrict {
+        address sender = libsign.verify(
+            abi.encode(name, address(this)),
+            v,
+            r,
+            s
+        );
         require(
             address(customers[sender]) == address(0x0),
             "customer already exists"
         );
-        c = new Customer(name, sender);
+        Customer c = new Customer(name, sender);
         c.changeOwner(owner);
         customers[sender] = c;
-        emit registered(address(this), sender, address(c), name);
     }
-
-    event removed(address);
 
     function remove(
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) public restrict returns (address sender, Customer c) {
-        sender = libsign.verify(abi.encode(address(this)), v, r, s);
-        c = customers[sender];
-        require(address(c) != address(0x0), "customer does not exists");
-        delete c;
-        emit removed(sender);
+    ) public restrict {
+        address sender = libsign.verify(abi.encode(address(this)), v, r, s);
+        require(
+            address(customers[sender]) != address(0x0),
+            "customer does not exists"
+        );
+        delete customers[sender];
     }
 }

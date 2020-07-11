@@ -177,10 +177,10 @@ contract Voting is VotingIfc, owned, signed {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) public restrict isRunning returns (address shareholder, uint256 shares) {
-        shareholder = verify(abi.encode(vote, address(this)), v, r, s);
+    ) public restrict isRunning {
+        address shareholder = verify(abi.encode(vote, address(this)), v, r, s);
         require(!voting.voters[shareholder], "already voted");
-        shares = voting.tokenErc20.balanceOf(shareholder);
+        uint256 shares = voting.tokenErc20.balanceOf(shareholder);
         require(shares > 0, "not a validated shareholder");
         voting.voters[shareholder] = true;
         if (vote == Vote.Yes) {
@@ -193,4 +193,8 @@ contract Voting is VotingIfc, owned, signed {
             voting.standDown += shares;
         }
     }
+
+    /* function voteYes(uint8 v,
+        bytes32 r,
+        bytes32 s) */
 }

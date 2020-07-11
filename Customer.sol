@@ -3,8 +3,9 @@ pragma solidity >=0.0;
 import "./owned.sol";
 import "./signed.sol";
 import "./LibCustomer.sol";
+import "./CustomerIfc.sol";
 
-contract Customer is owned, signed {
+contract Customer is CustomerIfc, owned, signed {
     string private name;
     uint256 private paidShareholders;
     address[] private assemblies;
@@ -40,19 +41,14 @@ contract Customer is owned, signed {
         return assemblies;
     }
 
-    event renamed(string, string);
-
     function rename(
         string memory _name,
         uint8 v,
         bytes32 r,
         bytes32 s
     ) public restrict issigned(abi.encode(_name, address(this)), v, r, s) {
-        emit renamed(name, _name);
         name = _name;
     }
-
-    event assemblyCreated(address, string);
 
     function newAssembly(
         string memory _name,
@@ -64,7 +60,6 @@ contract Customer is owned, signed {
         owned a = LibCustomer.newAssembly(_name, this, signatory);
         a.changeOwner(owner);
         assemblies.push(address(a));
-        emit assemblyCreated(address(a), _name);
     }
 
     function payment(uint256 _amount) public restrict {
