@@ -4,23 +4,11 @@ import "./owned.sol";
 import "./signed.sol";
 import "./TokenErc20Ifc.sol";
 import "./VotingIfc.sol";
+import "./LibVoting.sol";
 
 contract Voting is VotingIfc, owned, signed {
-    struct Data {
-        string title;
-        string proposal;
-        uint256 starttime;
-        uint256 endtime;
-        uint256 aye;
-        uint256 nay;
-        uint256 abstain;
-        uint256 standDown;
-        TokenErc20 tokenErc20;
-        mapping(address => bool) voters;
-    }
-    Data internal voting;
-
-    enum Vote {Yes, No, Abstain, StandDown}
+    using LibVoting for LibVoting.Data;
+    LibVoting.Data private data;
 
     modifier isclosed {
         require(closed(), "voting not yet closed");
@@ -39,13 +27,7 @@ contract Voting is VotingIfc, owned, signed {
         TokenErc20 token,
         address _signatory
     ) public signed(_signatory) {
-        require(bytes(title).length > 0, "voting title is required");
-        require(bytes(proposal).length > 0, "voting proposal is required");
-        voting.title = title;
-        voting.proposal = proposal;
-        voting.starttime = 0;
-        voting.endtime = 0;
-        voting.tokenErc20 = token;
+        data.construct(title, proposal, token);
     }
 
     function setVotingTime(
@@ -59,36 +41,23 @@ contract Voting is VotingIfc, owned, signed {
         restrict
         issigned(abi.encode(starttime, endtime, address(this)), v, r, s)
     {
-        if (starttime == 0 && endtime > 0) {
-            starttime = now;
-            endtime += starttime;
-        }
-        require(endtime != 0, "endttime is not defined");
-        require(starttime != 0, "startime is not defined");
-        require(endtime > starttime, "endttime is not after starttime");
-        require(starttime >= now, "start time must be in the future");
-        require(
-            voting.starttime == 0 && voting.endtime == 0,
-            "time is already configured"
-        );
-        voting.starttime = starttime;
-        voting.endtime = endtime;
+        data.setVotingTime(starttime, endtime);
     }
 
     function title() public view returns (string memory) {
-        return voting.title;
+        return data.title;
     }
 
     function proposal() public view returns (string memory) {
-        return voting.proposal;
+        return data.proposal;
     }
 
     function starttime() public view returns (uint256) {
-        return voting.starttime;
+        return data.starttime;
     }
 
     function endtime() public view returns (uint256) {
-        return voting.endtime;
+        return data.endtime;
     }
 
     function currenttime() public view returns (uint256) {
@@ -96,27 +65,27 @@ contract Voting is VotingIfc, owned, signed {
     }
 
     function aye() public view isclosed returns (uint256) {
-        return voting.aye;
+        return data.aye;
     }
 
     function nay() public view isclosed returns (uint256) {
-        return voting.nay;
+        return data.nay;
     }
 
     function abstain() public view isclosed returns (uint256) {
-        return voting.abstain;
+        return data.abstain;
     }
 
     function standDown() public view isclosed returns (uint256) {
-        return voting.standDown;
+        return data.standDown;
     }
 
     function tokenErc20() public view returns (TokenErc20) {
-        return voting.tokenErc20;
+        return data.tokenErc20;
     }
 
     function voters(address i) public view returns (bool) {
-        return voting.voters[i];
+        return data.voters[i];
     }
 
     function resolution()
@@ -130,19 +99,15 @@ contract Voting is VotingIfc, owned, signed {
             string memory
         )
     {
-        return (accepted(), voting.endtime, voting.title, voting.proposal);
+        return (accepted(), data.endtime, data.title, data.proposal);
     }
 
     function closed() public view returns (bool) {
-        return
-            voting.starttime > 0 && voting.endtime > 0 && now >= voting.endtime;
+        return data.starttime > 0 && data.endtime > 0 && now >= data.endtime;
     }
 
     function started() public view returns (bool) {
-        return
-            voting.starttime > 0 &&
-            voting.endtime > 0 &&
-            now >= voting.starttime;
+        return data.starttime > 0 && data.endtime > 0 && now >= data.starttime;
     }
 
     function running() public view returns (bool) {
@@ -150,51 +115,59 @@ contract Voting is VotingIfc, owned, signed {
     }
 
     function accepted() public view isclosed returns (bool) {
-        return voting.aye > voting.nay;
+        return data.aye > data.nay;
     }
 
     function rejected() public view isclosed returns (bool) {
-        return voting.aye <= voting.nay;
+        return data.aye <= data.nay;
     }
 
     function votes() public view isclosed returns (uint256, uint256) {
-        return (voting.aye, voting.nay);
+        return (data.aye, data.nay);
     }
 
     function canVote(address sender) public view returns (bool) {
-        return !closed() && !voting.voters[sender];
-    }
-
-    function addressToBytes(address a) internal pure returns (bytes memory) {
-        bytes memory b = new bytes(20);
-        for (uint256 i = 0; i < 20; i++)
-            b[i] = bytes1(uint8(uint256(a) / (2**(8 * (19 - i)))));
-        return b;
+        return !closed() && !data.voters[sender];
     }
 
     function castVote(
-        Vote vote,
+        LibVoting.Vote vote,
         uint8 v,
         bytes32 r,
         bytes32 s
     ) public restrict isRunning {
-        address shareholder = verify(abi.encode(vote, address(this)), v, r, s);
-        require(!voting.voters[shareholder], "already voted");
-        uint256 shares = voting.tokenErc20.balanceOf(shareholder);
-        require(shares > 0, "not a validated shareholder");
-        voting.voters[shareholder] = true;
-        if (vote == Vote.Yes) {
-            voting.aye += shares;
-        } else if (vote == Vote.No) {
-            voting.nay += shares;
-        } else if (vote == Vote.Abstain) {
-            voting.abstain += shares;
-        } else if (vote == Vote.StandDown) {
-            voting.standDown += shares;
-        }
+        data.castVote(vote, address(this), v, r, s);
     }
 
-    /* function voteYes(uint8 v,
+    /* function voteYes(
+        uint8 v,
         bytes32 r,
-        bytes32 s) */
+        bytes32 s
+    ) public restrict isRunning {
+        data.voteYes(address(this), v, r, s);
+    }
+
+    function voteNo(
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) public restrict isRunning {
+        data.voteNo(address(this), v, r, s);
+    }
+
+    function voteAbstain(
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) public restrict isRunning {
+        data.voteAbstain(address(this), v, r, s);
+    }
+
+    function voteStandDown(
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) public restrict isRunning {
+        data.voteStandDown(address(this), v, r, s);
+    } */
 }
