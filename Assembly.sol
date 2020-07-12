@@ -44,6 +44,10 @@ contract Assembly is owned, signed {
         return data.votings.length;
     }
 
+    function shares() public view returns (address) {
+        return address(data.shares);
+    }
+
     // shareholder's access, security by signed messages
 
     function register(

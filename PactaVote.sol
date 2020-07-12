@@ -19,6 +19,8 @@ contract PactaVote is owned {
         selfdestruct(owner);
     }
 
+    event registered(address, address);
+
     function register(
         string memory name,
         uint8 v,
@@ -38,6 +40,7 @@ contract PactaVote is owned {
         Customer c = new Customer(name, sender);
         c.changeOwner(owner);
         customers[sender] = c;
+        emit registered(sender, address(c));
     }
 
     function remove(

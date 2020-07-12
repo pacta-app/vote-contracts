@@ -46,6 +46,8 @@ contract Customer is CustomerIfc, owned, signed {
         name = _name;
     }
 
+    event assemblyCreated(address);
+
     function newAssembly(
         string memory _name,
         uint8 v,
@@ -61,6 +63,7 @@ contract Customer is CustomerIfc, owned, signed {
         );
         a.changeOwner(owner);
         assemblies.push(address(a));
+        emit assemblyCreated(address(a));
     }
 
     function payment(uint256 _amount) public restrict {
