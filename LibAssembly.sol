@@ -14,14 +14,17 @@ library LibAssembly {
         address[] votings; // list of votings
         string identifier; // you may set any text here, e.w. the assembly purpose
         CustomerIfc customer; // customer of this assembly
+        uint256 assemblyId; // assembly id in Customer
     }
 
     function construct(
         Data storage data,
         string memory _identifier,
+        uint256 _assemblyId,
         CustomerIfc _customer
     ) public {
         data.identifier = _identifier;
+        data.assemblyId = _assemblyId;
         data.customer = _customer;
         data.shares = new Shares();
     }
@@ -58,7 +61,7 @@ library LibAssembly {
         uint256 votes
     ) public {
         data.shares.setShareholder(shareholder, votes);
-        data.customer.consume(1);
+        data.customer.consume(1, data.assemblyId);
     }
 
     function setShareholders(
@@ -67,7 +70,7 @@ library LibAssembly {
         uint256[] memory votes
     ) public {
         data.shares.setShareholders(shareholder, votes);
-        data.customer.consume(shareholder.length);
+        data.customer.consume(shareholder.length, data.assemblyId);
     }
 
     function newVoting(

@@ -10,15 +10,11 @@ contract Customer is CustomerIfc, owned, signed {
     uint256 private paidShareholders;
     address[] private assemblies;
 
-    modifier fromassembly {
-        bool verified = false;
-        for (uint256 i = 0; i < assemblies.length; ++i) {
-            if (msg.sender == address(assemblies[i])) {
-                verified = true;
-                break;
-            }
-        }
-        require(verified, "consumation is only allowed from own assembly");
+    modifier fromassembly(uint256 assemblyId) {
+        require(
+            msg.sender == address(assemblies[assemblyId]),
+            "consumation is only allowed from own assembly"
+        );
         _;
     }
 
@@ -57,7 +53,12 @@ contract Customer is CustomerIfc, owned, signed {
         bytes32 s
     ) public restrict issigned(abi.encode(_name, address(this)), v, r, s) {
         require(paidShareholders > 0, "payment required");
-        owned a = LibCustomer.newAssembly(_name, this, signatory);
+        owned a = LibCustomer.newAssembly(
+            _name,
+            assemblies.length,
+            this,
+            signatory
+        );
         a.changeOwner(owner);
         assemblies.push(address(a));
     }
@@ -66,7 +67,10 @@ contract Customer is CustomerIfc, owned, signed {
         paidShareholders += _amount;
     }
 
-    function consume(uint256 _amount) public fromassembly {
+    function consume(uint256 _amount, uint256 _assemblyId)
+        public
+        fromassembly(_assemblyId)
+    {
         paidShareholders -= _amount;
     }
 }

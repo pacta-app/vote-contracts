@@ -11,10 +11,11 @@ contract Assembly is owned, signed {
 
     constructor(
         string memory _identifier,
+        uint256 _assemblyId,
         CustomerIfc _customer,
         address _signatory
     ) public signed(_signatory) {
-        data.construct(_identifier, _customer);
+        data.construct(_identifier, _assemblyId, _customer);
     }
 
     // getter
