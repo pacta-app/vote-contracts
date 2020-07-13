@@ -63,30 +63,30 @@ contract Assembly is owned, signed {
 
     function setShareholder(
         address shareholder,
-        uint256 votes,
+        uint256 shares,
         uint8 v,
         bytes32 r,
         bytes32 s
     )
         public
         restrict
-        issigned(abi.encode(shareholder, votes, address(this)), v, r, s)
+        issigned(abi.encode(shareholder, shares, address(this)), v, r, s)
     {
-        data.setShareholder(shareholder, votes);
+        data.setShareholder(shareholder, shares);
     }
 
     function setShareholders(
-        address[] memory shareholder,
-        uint256[] memory votes,
+        address[] memory shareholders,
+        uint256[] memory shares,
         uint8 v,
         bytes32 r,
         bytes32 s
     )
         public
         restrict
-        issigned(abi.encode(shareholder, votes, address(this)), v, r, s)
+        issigned(abi.encode(shareholders, shares, address(this)), v, r, s)
     {
-        data.setShareholders(shareholder, votes);
+        data.setShareholders(shareholders, shares);
     }
 
     event votingCreated(address);

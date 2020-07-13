@@ -13,23 +13,23 @@ contract Shares is TokenErc20, owned {
         _;
     }
 
-    function setShareholder(address shareholder, uint256 votes)
+    function setShareholder(address shareholder, uint256 shares)
         public
         open
         restrict
     {
-        total = total + votes - shareholders[shareholder]; // remove previous add current
-        shareholders[shareholder] = votes;
+        total = total + shares - shareholders[shareholder]; // remove previous add current
+        shareholders[shareholder] = shares;
     }
 
     function setShareholders(
-        address[] memory shareholder,
-        uint256[] memory votes
+        address[] memory _shareholders,
+        uint256[] memory _shares
     ) public open restrict {
-        require(shareholder.length == votes.length, "array size missmatch");
-        for (uint256 i = 0; i < votes.length; ++i) {
-            total = total + votes[i] - shareholders[shareholder[i]]; // remove previous add current
-            shareholders[shareholder[i]] = votes[i];
+        require(_shareholders.length == _shares.length, "array size missmatch");
+        for (uint256 i = 0; i < _shares.length; ++i) {
+            total = total + _shares[i] - shareholders[_shareholders[i]]; // remove previous add current
+            shareholders[_shareholders[i]] = _shares[i];
         }
     }
 

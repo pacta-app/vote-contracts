@@ -58,19 +58,19 @@ library LibAssembly {
     function setShareholder(
         Data storage data,
         address shareholder,
-        uint256 votes
+        uint256 shares
     ) public {
-        data.shares.setShareholder(shareholder, votes);
+        data.shares.setShareholder(shareholder, shares);
         data.customer.consume(1, data.assemblyId);
     }
 
     function setShareholders(
         Data storage data,
-        address[] memory shareholder,
-        uint256[] memory votes
+        address[] memory shareholders,
+        uint256[] memory shares
     ) public {
-        data.shares.setShareholders(shareholder, votes);
-        data.customer.consume(shareholder.length, data.assemblyId);
+        data.shares.setShareholders(shareholders, shares);
+        data.customer.consume(shareholders.length, data.assemblyId);
     }
 
     function newVoting(
