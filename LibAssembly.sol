@@ -79,10 +79,11 @@ library LibAssembly {
         string memory proposal,
         address signatory,
         address payable owner
-    ) public {
+    ) public returns (address) {
         Voting voting = new Voting(title, proposal, data.shares, signatory);
         voting.changeOwner(owner);
         data.votings.push(address(voting));
+        return address(voting);
     }
 
     function lock(Data storage data) public {

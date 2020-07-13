@@ -89,6 +89,8 @@ contract Assembly is owned, signed {
         data.setShareholders(shareholder, votes);
     }
 
+    event votingCreated(address);
+
     function newVoting(
         string memory title,
         string memory proposal,
@@ -100,7 +102,7 @@ contract Assembly is owned, signed {
         restrict
         issigned(abi.encode(title, proposal, address(this)), v, r, s)
     {
-        data.newVoting(title, proposal, signatory, owner);
+        emit votingCreated(data.newVoting(title, proposal, signatory, owner));
     }
 
     function lock(
