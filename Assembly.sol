@@ -62,31 +62,31 @@ contract Assembly is owned, signed {
     // administration, restricted to assembly owner
 
     function setShareholder(
-        address shareholder,
-        uint256 shares,
+        address _shareholder,
+        uint256 _shares,
         uint8 v,
         bytes32 r,
         bytes32 s
     )
         public
         restrict
-        issigned(abi.encode(shareholder, shares, address(this)), v, r, s)
+        issigned(abi.encode(_shareholder, _shares, address(this)), v, r, s)
     {
-        data.setShareholder(shareholder, shares);
+        data.setShareholder(_shareholder, _shares);
     }
 
     function setShareholders(
-        address[] memory shareholders,
-        uint256[] memory shares,
+        address[] memory _shareholders,
+        uint256[] memory _shares,
         uint8 v,
         bytes32 r,
         bytes32 s
     )
         public
         restrict
-        issigned(abi.encode(shareholders, shares, address(this)), v, r, s)
+        issigned(abi.encode(_shareholders, _shares, address(this)), v, r, s)
     {
-        data.setShareholders(shareholders, shares);
+        data.setShareholders(_shareholders, _shares);
     }
 
     event votingCreated(address);

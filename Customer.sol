@@ -6,13 +6,12 @@ import "./LibCustomer.sol";
 import "./CustomerIfc.sol";
 
 contract Customer is CustomerIfc, owned, signed {
-    string private name;
-    uint256 private paidShareholders;
-    address[] private assemblies;
+    using LibCustomer for LibCustomer.Data;
+    LibCustomer.Data data;
 
     modifier fromassembly(uint256 assemblyId) {
         require(
-            msg.sender == address(assemblies[assemblyId]),
+            msg.sender == address(data.assemblies[assemblyId]),
             "consumation is only allowed from own assembly"
         );
         _;
@@ -22,19 +21,19 @@ contract Customer is CustomerIfc, owned, signed {
         public
         signed(_signatory)
     {
-        name = _name;
+        data.name = _name;
     }
 
-    function getName() public view restrict returns (string memory) {
-        return name;
+    function name() public view returns (string memory) {
+        return data.name;
     }
 
-    function getPaidShareholders() public view restrict returns (uint256) {
-        return paidShareholders;
+    function paidShareholders() public view returns (uint256) {
+        return data.paidShareholders;
     }
 
-    function getAssemblies() public view restrict returns (address[] memory) {
-        return assemblies;
+    function assemblies() public view returns (address[] memory) {
+        return data.assemblies;
     }
 
     function rename(
@@ -43,7 +42,7 @@ contract Customer is CustomerIfc, owned, signed {
         bytes32 r,
         bytes32 s
     ) public restrict issigned(abi.encode(_name, address(this)), v, r, s) {
-        name = _name;
+        data.name = _name;
     }
 
     event assemblyCreated(address);
@@ -54,26 +53,18 @@ contract Customer is CustomerIfc, owned, signed {
         bytes32 r,
         bytes32 s
     ) public restrict issigned(abi.encode(_name, address(this)), v, r, s) {
-        require(paidShareholders > 0, "payment required");
-        owned a = LibCustomer.newAssembly(
-            _name,
-            assemblies.length,
-            this,
-            signatory
-        );
-        a.changeOwner(owner);
-        assemblies.push(address(a));
-        emit assemblyCreated(address(a));
+        address a = data.newAssembly(_name, this, owner, signatory);
+        emit assemblyCreated(a);
     }
 
     function payment(uint256 _amount) public restrict {
-        paidShareholders += _amount;
+        data.paidShareholders += _amount;
     }
 
     function consume(uint256 _amount, uint256 _assemblyId)
         public
         fromassembly(_assemblyId)
     {
-        paidShareholders -= _amount;
+        data.paidShareholders -= _amount;
     }
 }
