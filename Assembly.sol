@@ -20,6 +20,10 @@ contract Assembly is owned, signed {
 
     // getter
 
+    function identifier() public view returns (string memory) {
+        return data.identifier;
+    }
+
     function registrations(string memory s) public view returns (address) {
         return data.registrations[s];
     }

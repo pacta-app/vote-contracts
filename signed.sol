@@ -3,7 +3,7 @@ pragma solidity >=0.0;
 import "./libsign.sol";
 
 contract signed {
-    address internal signatory;
+    address public signatory;
 
     // signatory has signed message
     modifier issigned(
